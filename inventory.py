@@ -15,15 +15,19 @@ from tkinter import *
 from tkinter import messagebox
 import sqlite3, configparser
 
+
 config= configparser.ConfigParser()
-config.read('config_sample.ini')
+config.read('config.ini')
 
 inventoryName = config['Settings']['inventoryName']
+
 categories = []
 for key, category in config['Categories'].items():
     categories.append(category)
-largeFont = ("Verdana", 16)
 categories.insert(0, "All")  # add a special category to contain all of the items
+
+
+largeFont = ("Verdana", 16)
 
 conn = sqlite3.connect(inventoryName)
 c = conn.cursor()
@@ -31,12 +35,11 @@ c = conn.cursor()
 initialize_db = "CREATE TABLE IF NOT EXISTS \"items\" (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, category TEXT, accessories TEXT, details TEXT)"
 c.execute(initialize_db)
 
-
 class myClassController(Tk):  # create a class that inherits from Tk()
     def __init__(self):
         Tk.__init__(self)  # initialize the inherited class
 
-        container = Frame(self)  # make a simple containeree
+        container = Frame(self)  # make a simple container
         container.pack(side="top", fill="both", expand=True)  # container fills the window
 
         # make a dictionary for all the pages
@@ -67,7 +70,7 @@ class myClassController(Tk):  # create a class that inherits from Tk()
 class StartPage(Frame):  # making the start page, inheriting Frame class
     # parent is the container that fills the screen
     # controller is myClassController, which controls the frames to show
-    def __init__(self, parent, controller, ep):
+    def __init__(self, parent, controller, edit_page):
         Frame.__init__(self, parent)  # run the inherited class's init method
 
         # in addition, initialize the following attributes
@@ -82,7 +85,7 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
 
         scrollbar = Scrollbar(itemListFrame)
         scrollbar.pack(side='right', fill=Y)
-        self.itemList.config(yscrollcommand=scrollbar.set)
+        self.itemList.config(yscrollcommand=scrollbar.set) #tie the listbox to the scrollbar
         scrollbar.config(command=self.itemList.yview)
 
         self.textBox = Text(self, height=20, width=40, state=DISABLED, wrap=WORD)
@@ -92,7 +95,7 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
             AddPage))  # need to use lambda function to pass in parameters
         addButton.grid(row=3, column=1, padx=10, pady=5, sticky="news")
 
-        editButton = Button(self, text="Edit", command=lambda: self.editItem(controller, ep))
+        editButton = Button(self, text="Edit", command=lambda: self.editItem(controller, edit_page))
         editButton.grid(row=3, column=2, padx=10, pady=5, sticky="news")
 
         deleteButton = Button(self, text="Delete", command=self.deleteItem)
@@ -122,8 +125,8 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
         searchButton = Button(searchFrame, text="Search", command=self.search)
         searchButton.pack(side='right')
 
-        self.lastAddedVar = StringVar()
-        self.lastAddedLabel = Label(self, textvariable=self.lastAddedVar)
+        self.lastAddedItem = StringVar()
+        self.lastAddedLabel = Label(self, textvariable=self.lastAddedItem)
         self.lastAddedLabel.grid(row=6, column=1, columnspan=2)
 
         self.itemCountVar = StringVar()
@@ -139,6 +142,7 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
 
         self.itemList.delete(0, END)
 
+        # update item list and item count
         count = 0
         for item in c.fetchall():
             self.itemList.insert(END, item[1])
@@ -166,7 +170,7 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
         acc1 = acc.replace(',', '\n')
         det1 = det.replace(',', '\n')
 
-        info = "Name:\t\t%s\n\nCategory:\t\t%s\n\nAccessories:\n %s\n\nDetails:\n %s" % (name, cat, acc1, det1)
+        info = "Name:\t%s\n\nCategory:\t%s\n\nAccessories:\n %s\n\nDetails:\n %s" % (name, cat, acc1, det1)
 
         self.textBox.config(state=NORMAL)
         self.textBox.delete(1.0, END)
@@ -180,9 +184,9 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
             c.execute("SELECT MAX(id) FROM items")
             max_id = c.fetchone()[0]
             c.execute("SELECT * FROM items where id = ?", (max_id,))
-            self.lastAddedVar.set("Last Added: " + c.fetchone()[1])
+            self.lastAddedItem.set("Last Added: " + c.fetchone()[1])
         except TypeError:
-            self.lastAddedVar.set("Last Added: None")
+            self.lastAddedItem.set("Last Added: None")
 
         # populate the list box with items according to category selected
 
@@ -215,15 +219,17 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
             messagebox.showwarning("Error", "No Item Selected")
             return
         selectName = self.itemList.get(index)
-        c.execute("DELETE FROM items WHERE name = ?", (selectName,))
-        conn.commit()
-        self.itemList.delete(ACTIVE)
+        ans = messagebox.askyesno("Warning", f"You are about to delete \"{selectName}\". Do you wish to proceed?")
+        if ans == True:
+            c.execute("DELETE FROM items WHERE name = ?", (selectName,))
+            conn.commit()
+            self.itemList.delete(ACTIVE)
 
     def hide(self):
         index = self.itemList.curselection()[0]
         self.itemList.delete(index)
 
-    def editItem(self, controller, ep):
+    def editItem(self, controller, edit_page):
         try:
             index = self.itemList.curselection()[0]
         except IndexError:
@@ -233,19 +239,19 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
         c.execute("SELECT * FROM items WHERE name = ?", (selectName,))
         id, name, cat, acc, det = c.fetchall()[0]
 
-        # we edit the editPage that we passed in
+        # we fill in the details on the editPage that we passed in
 
-        ep.id = id
+        edit_page.id = id
 
-        ep.e1.delete(0, END)
-        ep.e2.delete(0, END)
-        ep.e3.delete(0, END)
-        ep.e4.delete(0, END)
+        edit_page.e1.delete(0, END)
+        edit_page.e2.delete(0, END)
+        edit_page.e3.delete(0, END)
+        edit_page.e4.delete(0, END)
 
-        ep.e1.insert(0, name)
-        ep.e2.insert(0, cat)
-        ep.e3.insert(0, acc)
-        ep.e4.insert(0, det)
+        edit_page.e1.insert(0, name)
+        edit_page.e2.insert(0, cat)
+        edit_page.e3.insert(0, acc)
+        edit_page.e4.insert(0, det)
 
         controller.show_frame(EditPage)
 
