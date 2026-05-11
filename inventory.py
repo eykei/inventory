@@ -9,6 +9,7 @@ usage:
 status: Working
 
 todo:
+refactor edit page
 '''
 
 from tkinter import *
@@ -101,7 +102,7 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
         deleteButton = Button(self, text="Delete", command=self.deleteItem)
         deleteButton.grid(row=4, column=1, padx=10, pady=5, sticky="news")
 
-        hideButton = Button(self, text="Hide", command=self.hide)
+        hideButton = Button(self, text="Hide/Unhide", command=self.hide)
         hideButton.grid(row=4, column=2, padx=10, pady=5, sticky='news')
 
         viewButton = Button(self, text="View", command=self.viewItem)
@@ -132,6 +133,8 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
         self.itemCountVar = StringVar()
         self.itemCountLabel = Label(self, textvariable=self.itemCountVar)
         self.itemCountLabel.grid(row=7, column=1, columnspan=2)
+
+        self.hidden_items=[]
 
         self.refresh()
 
@@ -202,8 +205,9 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
 
         count = 0
         for item in c.fetchall():
-            self.itemList.insert(END, item[1])
-            count += 1
+            if item[1] not in self.hidden_items:
+                self.itemList.insert(END, item[1])
+                count += 1
 
         self.itemCountVar.set('Item Count: '+str(count))
 
@@ -226,8 +230,13 @@ class StartPage(Frame):  # making the start page, inheriting Frame class
             self.itemList.delete(ACTIVE)
 
     def hide(self):
-        index = self.itemList.curselection()[0]
-        self.itemList.delete(index)
+        if self.itemList.curselection():
+            index = self.itemList.curselection()[0]
+            self.hidden_items.append(self.itemList.get(index))
+            self.itemList.delete(index)
+        else:
+            self.hidden_items = []
+            self.refresh()
 
     def editItem(self, controller, edit_page):
         try:
@@ -339,6 +348,363 @@ class EditPage(AddPage):
         conn.commit()
 
         self.message.set("Item Updated!")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 app = myClassController()  # this is our custom 'root' since myClassController inherits Tk()
